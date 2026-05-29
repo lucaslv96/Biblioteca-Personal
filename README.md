@@ -12,6 +12,7 @@ La aplicacion ya tiene:
 - Conexion a SQLite con SQLAlchemy.
 - Modelo `User`.
 - Registro de usuarios.
+- Login con JWT.
 - Frontend basico en React para probar la API.
 - Hash de passwords con `bcrypt`.
 - Validacion y serializacion con Pydantic.
@@ -20,7 +21,6 @@ La aplicacion ya tiene:
 
 Pendiente para siguientes pasos:
 
-- Login con JWT.
 - Modelo `Book`.
 - CRUD de libros.
 - Relacion usuario-libros.
@@ -254,18 +254,21 @@ frontend/
 | --- | --- |
 | `app/main.py` | Crea la instancia FastAPI, registra routers y ejecuta la inicializacion de la base de datos al arrancar. |
 | `app/api/v1/router.py` | Router principal de la version 1 de la API. Agrupa los routers de endpoints. |
+| `app/api/v1/endpoints/auth.py` | Endpoint de login. Valida credenciales y devuelve JWT. |
 | `app/api/v1/endpoints/health.py` | Endpoint de health check para comprobar que la API responde. |
 | `app/api/v1/endpoints/users.py` | Endpoint de registro de usuarios. Actua como controller. |
 | `app/core/config.py` | Configuracion central de la app usando `pydantic-settings`. |
-| `app/core/security.py` | Funciones de seguridad: hashear y verificar passwords. |
+| `app/core/security.py` | Funciones de seguridad: hashear/verificar passwords y crear tokens JWT. |
 | `app/db/base.py` | Define `Base`, la clase base de SQLAlchemy para los modelos. |
 | `app/db/session.py` | Crea el engine de SQLAlchemy, la fabrica de sesiones y la dependencia `get_db`. |
 | `app/db/init_db.py` | Crea las tablas registradas en los modelos usando `Base.metadata.create_all`. |
 | `app/models/user.py` | Modelo SQLAlchemy de la tabla `users`. |
 | `app/models/__init__.py` | Importa modelos para que SQLAlchemy los registre en metadata. |
 | `app/repositories/user_repository.py` | Encapsula consultas y operaciones de persistencia para usuarios. |
+| `app/schemas/auth.py` | Schemas Pydantic para login y respuesta con token. |
 | `app/schemas/health.py` | Schema Pydantic para la respuesta del health check. |
 | `app/schemas/user.py` | Schemas Pydantic para crear y devolver usuarios. |
+| `app/services/auth_service.py` | Logica de negocio del login: autenticar usuario y generar token. |
 | `app/services/health_service.py` | Logica simple para devolver informacion de estado de la API. |
 | `app/services/user_service.py` | Logica de negocio del registro de usuarios. |
 
@@ -274,6 +277,7 @@ frontend/
 | Archivo | Responsabilidad |
 | --- | --- |
 | `tests/conftest.py` | Fixtures compartidas: app de test, SQLite temporal y override de `get_db`. |
+| `tests/test_auth.py` | Tests del login correcto y rechazo de credenciales invalidas. |
 | `tests/test_health.py` | Test del endpoint `GET /api/v1/health`. |
 | `tests/test_users.py` | Tests del registro de usuario y rechazo de emails duplicados. |
 
@@ -286,7 +290,7 @@ frontend/
 | `frontend/vite.config.js` | Configuracion de Vite: root, servidor local, puerto y salida del build. |
 | `frontend/index.html` | HTML base donde Vite monta la aplicacion React. |
 | `frontend/src/api.js` | Cliente HTTP para llamar al backend FastAPI. |
-| `frontend/src/main.jsx` | Componentes React principales: estado de API, formulario de registro y respuesta JSON. |
+| `frontend/src/main.jsx` | Componentes React principales: login, crear cuenta, recuperar password y pagina principal. |
 | `frontend/src/styles.css` | Estilos visuales del frontend. |
 
 ## Base de datos
@@ -408,6 +412,51 @@ Status code:
 409 Conflict
 ```
 
+### Login
+
+```http
+POST /api/v1/auth/login
+```
+
+Body:
+
+```json
+{
+  "email": "lucas@example.com",
+  "password": "supersecret"
+}
+```
+
+Respuesta:
+
+```json
+{
+  "access_token": "jwt-token",
+  "token_type": "bearer",
+  "user": {
+    "id": 1,
+    "email": "lucas@example.com",
+    "full_name": "Lucas",
+    "is_active": true,
+    "created_at": "2026-05-29T10:00:00"
+  }
+}
+```
+
+Si las credenciales son incorrectas:
+
+```json
+{
+  "detail": "Invalid email or password."
+}
+```
+
+Status code:
+
+```text
+401 Unauthorized
+```
+
 ## Frontend React
 
 El frontend vive en:
@@ -421,9 +470,10 @@ Esta pensado como una herramienta sencilla para probar la API desde el navegador
 Permite:
 
 - Comprobar si el backend responde con `GET /api/v1/health`.
+- Iniciar sesion con `POST /api/v1/auth/login`.
+- Entrar en una pantalla principal cuando las credenciales son correctas.
 - Registrar usuarios con `POST /api/v1/users`.
-- Ver la ultima respuesta JSON devuelta por la API.
-- Ver errores de validacion o conflictos, por ejemplo emails duplicados.
+- Acceder a una pantalla de recuperacion de password pendiente de backend.
 
 Por defecto llama al backend en:
 
@@ -456,6 +506,7 @@ Esto permite probar endpoints reales sin tocar datos locales.
 - **SQLite**: base de datos simple para empezar sin depender de servicios externos.
 - **Pydantic**: validacion clara de entrada y salida.
 - **bcrypt**: las passwords se guardan hasheadas, nunca en texto plano.
+- **JWT**: el login devuelve un access token que el frontend guarda en `sessionStorage`.
 - **Repository pattern**: separa SQLAlchemy de la logica de negocio.
 - **Service layer**: mantiene las reglas de negocio fuera de los endpoints.
 - **pytest**: permite validar el comportamiento de la API de forma automatizada.
@@ -542,7 +593,8 @@ La logica de negocio no vive en los endpoints. Los endpoints reciben HTTP y dele
 2. Conexion SQLite con SQLAlchemy.
 3. Modelo y registro de usuarios.
 4. Login con JWT.
-5. Modelo y CRUD de libros.
-6. Restriccion: cada usuario gestiona solo sus libros.
-7. Docker y docker-compose.
-8. README final con ejemplos de uso y decisiones tecnicas.
+5. Frontend React basico con login y crear cuenta.
+6. Modelo y CRUD de libros.
+7. Restriccion: cada usuario gestiona solo sus libros.
+8. Docker y docker-compose.
+9. README final con ejemplos de uso y decisiones tecnicas.

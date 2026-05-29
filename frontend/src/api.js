@@ -33,4 +33,11 @@ export function createUser(user) {
   });
 }
 
+export function loginUser(credentials) {
+  return request("/api/v1/auth/login", {
+    method: "POST",
+    body: JSON.stringify(credentials),
+  });
+}
+
 export { API_BASE_URL };
