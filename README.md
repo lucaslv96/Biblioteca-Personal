@@ -12,6 +12,7 @@ La aplicacion ya tiene:
 - Conexion a SQLite con SQLAlchemy.
 - Modelo `User`.
 - Registro de usuarios.
+- Frontend basico en React para probar la API.
 - Hash de passwords con `bcrypt`.
 - Validacion y serializacion con Pydantic.
 - Tests automatizados con pytest.
@@ -226,6 +227,14 @@ tests/
   conftest.py
   test_health.py
   test_users.py
+frontend/
+  index.html
+  package.json
+  vite.config.js
+  src/
+    api.js
+    main.jsx
+    styles.css
 ```
 
 ## Que hace cada archivo
@@ -267,6 +276,18 @@ tests/
 | `tests/conftest.py` | Fixtures compartidas: app de test, SQLite temporal y override de `get_db`. |
 | `tests/test_health.py` | Test del endpoint `GET /api/v1/health`. |
 | `tests/test_users.py` | Tests del registro de usuario y rechazo de emails duplicados. |
+
+### Frontend
+
+| Archivo | Responsabilidad |
+| --- | --- |
+| `frontend/package.json` | Dependencias y scripts del frontend React. |
+| `frontend/package-lock.json` | Versiones exactas instaladas por npm para reproducir el entorno. |
+| `frontend/vite.config.js` | Configuracion de Vite: root, servidor local, puerto y salida del build. |
+| `frontend/index.html` | HTML base donde Vite monta la aplicacion React. |
+| `frontend/src/api.js` | Cliente HTTP para llamar al backend FastAPI. |
+| `frontend/src/main.jsx` | Componentes React principales: estado de API, formulario de registro y respuesta JSON. |
+| `frontend/src/styles.css` | Estilos visuales del frontend. |
 
 ## Base de datos
 
@@ -387,6 +408,35 @@ Status code:
 409 Conflict
 ```
 
+## Frontend React
+
+El frontend vive en:
+
+```text
+frontend/
+```
+
+Esta pensado como una herramienta sencilla para probar la API desde el navegador mientras se desarrolla el backend.
+
+Permite:
+
+- Comprobar si el backend responde con `GET /api/v1/health`.
+- Registrar usuarios con `POST /api/v1/users`.
+- Ver la ultima respuesta JSON devuelta por la API.
+- Ver errores de validacion o conflictos, por ejemplo emails duplicados.
+
+Por defecto llama al backend en:
+
+```text
+http://127.0.0.1:8000
+```
+
+Si quieres cambiarlo, puedes crear un archivo `frontend/.env`:
+
+```text
+VITE_API_BASE_URL=http://127.0.0.1:8000
+```
+
 ## Tests
 
 Los tests no usan la base real `biblioteca.db`.
@@ -453,6 +503,31 @@ Ejecutar tests:
 
 ```bash
 pytest
+```
+
+Instalar dependencias del frontend:
+
+```bash
+cd frontend
+npm install
+```
+
+Levantar el frontend:
+
+```bash
+npm run dev
+```
+
+Abrir la app React:
+
+```text
+http://127.0.0.1:5173
+```
+
+Compilar el frontend:
+
+```bash
+npm run build
 ```
 
 ## Como explicar este proyecto en una entrevista
