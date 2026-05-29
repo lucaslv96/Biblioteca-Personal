@@ -1,18 +1,11 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from app.main import app
-
-
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
 
 @pytest.mark.anyio
-async def test_health_check_returns_api_status() -> None:
+async def test_health_check_returns_api_status(test_app) -> None:
     async with AsyncClient(
-        transport=ASGITransport(app=app),
+        transport=ASGITransport(app=test_app),
         base_url="http://test",
     ) as client:
         response = await client.get("/api/v1/health")
