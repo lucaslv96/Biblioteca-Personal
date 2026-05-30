@@ -11,9 +11,12 @@ La aplicacion ya tiene:
 - Estructura modular por capas.
 - Conexion a SQLite con SQLAlchemy.
 - Modelo `User`.
+- Modelo `Book`.
 - Registro de usuarios.
 - Login con JWT.
-- Frontend basico en React para probar la API.
+- CRUD de libros protegido por JWT.
+- Cada usuario solo puede gestionar sus propios libros.
+- Frontend basico en React para login y gestion de libros.
 - Hash de passwords con `bcrypt`.
 - Validacion y serializacion con Pydantic.
 - Tests automatizados con pytest.
@@ -21,11 +24,9 @@ La aplicacion ya tiene:
 
 Pendiente para siguientes pasos:
 
-- Modelo `Book`.
-- CRUD de libros.
-- Relacion usuario-libros.
-- Proteccion de endpoints por usuario autenticado.
 - Docker y docker-compose.
+- Migraciones con Alembic.
+- Recuperacion real de password por email.
 
 ## Arquitectura usada
 
@@ -200,8 +201,11 @@ app/api/v1/endpoints/users.py
 ```text
 app/
   api/
+    deps.py
     v1/
       endpoints/
+        auth.py
+        books.py
         health.py
         users.py
       router.py
@@ -213,18 +217,26 @@ app/
     init_db.py
     session.py
   models/
+    book.py
     user.py
   repositories/
+    book_repository.py
     user_repository.py
   schemas/
+    auth.py
+    book.py
     health.py
     user.py
   services/
+    auth_service.py
+    book_service.py
     health_service.py
     user_service.py
   main.py
 tests/
   conftest.py
+  test_auth.py
+  test_books.py
   test_health.py
   test_users.py
 frontend/
@@ -253,8 +265,10 @@ frontend/
 | Archivo | Responsabilidad |
 | --- | --- |
 | `app/main.py` | Crea la instancia FastAPI, registra routers y ejecuta la inicializacion de la base de datos al arrancar. |
+| `app/api/deps.py` | Dependencias compartidas de FastAPI, incluyendo usuario autenticado desde JWT. |
 | `app/api/v1/router.py` | Router principal de la version 1 de la API. Agrupa los routers de endpoints. |
 | `app/api/v1/endpoints/auth.py` | Endpoint de login. Valida credenciales y devuelve JWT. |
+| `app/api/v1/endpoints/books.py` | Endpoints CRUD de libros protegidos por autenticacion. |
 | `app/api/v1/endpoints/health.py` | Endpoint de health check para comprobar que la API responde. |
 | `app/api/v1/endpoints/users.py` | Endpoint de registro de usuarios. Actua como controller. |
 | `app/core/config.py` | Configuracion central de la app usando `pydantic-settings`. |
@@ -262,13 +276,17 @@ frontend/
 | `app/db/base.py` | Define `Base`, la clase base de SQLAlchemy para los modelos. |
 | `app/db/session.py` | Crea el engine de SQLAlchemy, la fabrica de sesiones y la dependencia `get_db`. |
 | `app/db/init_db.py` | Crea las tablas registradas en los modelos usando `Base.metadata.create_all`. |
+| `app/models/book.py` | Modelo SQLAlchemy de la tabla `books`. |
 | `app/models/user.py` | Modelo SQLAlchemy de la tabla `users`. |
 | `app/models/__init__.py` | Importa modelos para que SQLAlchemy los registre en metadata. |
+| `app/repositories/book_repository.py` | Encapsula consultas y operaciones de persistencia para libros. |
 | `app/repositories/user_repository.py` | Encapsula consultas y operaciones de persistencia para usuarios. |
 | `app/schemas/auth.py` | Schemas Pydantic para login y respuesta con token. |
+| `app/schemas/book.py` | Schemas Pydantic para crear, editar y devolver libros. |
 | `app/schemas/health.py` | Schema Pydantic para la respuesta del health check. |
 | `app/schemas/user.py` | Schemas Pydantic para crear y devolver usuarios. |
 | `app/services/auth_service.py` | Logica de negocio del login: autenticar usuario y generar token. |
+| `app/services/book_service.py` | Logica de negocio del CRUD de libros y filtrado por usuario. |
 | `app/services/health_service.py` | Logica simple para devolver informacion de estado de la API. |
 | `app/services/user_service.py` | Logica de negocio del registro de usuarios. |
 
@@ -278,6 +296,7 @@ frontend/
 | --- | --- |
 | `tests/conftest.py` | Fixtures compartidas: app de test, SQLite temporal y override de `get_db`. |
 | `tests/test_auth.py` | Tests del login correcto y rechazo de credenciales invalidas. |
+| `tests/test_books.py` | Tests del CRUD de libros, autenticacion y aislamiento por usuario. |
 | `tests/test_health.py` | Test del endpoint `GET /api/v1/health`. |
 | `tests/test_users.py` | Tests del registro de usuario y rechazo de emails duplicados. |
 
@@ -290,7 +309,7 @@ frontend/
 | `frontend/vite.config.js` | Configuracion de Vite: root, servidor local, puerto y salida del build. |
 | `frontend/index.html` | HTML base donde Vite monta la aplicacion React. |
 | `frontend/src/api.js` | Cliente HTTP para llamar al backend FastAPI. |
-| `frontend/src/main.jsx` | Componentes React principales: login, crear cuenta, recuperar password y pagina principal. |
+| `frontend/src/main.jsx` | Componentes React principales: login, crear cuenta, recuperar password y CRUD de libros. |
 | `frontend/src/styles.css` | Estilos visuales del frontend. |
 
 ## Base de datos
@@ -351,6 +370,28 @@ Campos actuales:
 | `hashed_password` | String | Password hasheada con `bcrypt`. Nunca se devuelve en la API. |
 | `is_active` | Boolean | Indica si el usuario esta activo. |
 | `created_at` | DateTime | Fecha de creacion en UTC. |
+
+### Tabla `books`
+
+Modelo definido en:
+
+```text
+app/models/book.py
+```
+
+Campos actuales:
+
+| Campo | Tipo | Descripcion |
+| --- | --- | --- |
+| `id` | Integer | Identificador principal del libro. |
+| `title` | String | Titulo del libro. |
+| `author` | String nullable | Autor opcional. |
+| `description` | Text nullable | Notas o descripcion opcional. |
+| `publication_year` | Integer nullable | Ano de publicacion opcional. |
+| `is_read` | Boolean | Indica si el usuario ya ha leido el libro. |
+| `owner_id` | Integer | Usuario propietario del libro. |
+| `created_at` | DateTime | Fecha de creacion en UTC. |
+| `updated_at` | DateTime | Fecha de ultima actualizacion en UTC. |
 
 ## Endpoints disponibles
 
@@ -457,6 +498,78 @@ Status code:
 401 Unauthorized
 ```
 
+### Listar libros
+
+```http
+GET /api/v1/books
+Authorization: Bearer <access_token>
+```
+
+Respuesta:
+
+```json
+[
+  {
+    "id": 1,
+    "title": "Clean Code",
+    "author": "Robert C. Martin",
+    "description": "Notas personales",
+    "publication_year": 2008,
+    "is_read": true,
+    "owner_id": 1,
+    "created_at": "2026-05-30T10:00:00",
+    "updated_at": "2026-05-30T10:00:00"
+  }
+]
+```
+
+### Crear libro
+
+```http
+POST /api/v1/books
+Authorization: Bearer <access_token>
+```
+
+Body:
+
+```json
+{
+  "title": "Clean Code",
+  "author": "Robert C. Martin",
+  "description": "Notas personales",
+  "publication_year": 2008,
+  "is_read": true
+}
+```
+
+### Editar libro
+
+```http
+PATCH /api/v1/books/{book_id}
+Authorization: Bearer <access_token>
+```
+
+Body:
+
+```json
+{
+  "is_read": false
+}
+```
+
+### Eliminar libro
+
+```http
+DELETE /api/v1/books/{book_id}
+Authorization: Bearer <access_token>
+```
+
+Status code:
+
+```text
+204 No Content
+```
+
 ## Frontend React
 
 El frontend vive en:
@@ -465,14 +578,14 @@ El frontend vive en:
 frontend/
 ```
 
-Esta pensado como una herramienta sencilla para probar la API desde el navegador mientras se desarrolla el backend.
+Esta pensado como una interfaz sencilla de producto para probar el flujo de acceso y una vista principal del usuario.
 
 Permite:
 
-- Comprobar si el backend responde con `GET /api/v1/health`.
 - Iniciar sesion con `POST /api/v1/auth/login`.
 - Entrar en una pantalla principal cuando las credenciales son correctas.
 - Registrar usuarios con `POST /api/v1/users`.
+- Crear, listar, editar, marcar como leidos y borrar libros.
 - Acceder a una pantalla de recuperacion de password pendiente de backend.
 
 Por defecto llama al backend en:
@@ -507,6 +620,7 @@ Esto permite probar endpoints reales sin tocar datos locales.
 - **Pydantic**: validacion clara de entrada y salida.
 - **bcrypt**: las passwords se guardan hasheadas, nunca en texto plano.
 - **JWT**: el login devuelve un access token que el frontend guarda en `sessionStorage`.
+- **Ownership por usuario**: los libros siempre se consultan por `owner_id`, asi un usuario no puede acceder a libros de otro.
 - **Repository pattern**: separa SQLAlchemy de la logica de negocio.
 - **Service layer**: mantiene las reglas de negocio fuera de los endpoints.
 - **pytest**: permite validar el comportamiento de la API de forma automatizada.
@@ -596,5 +710,6 @@ La logica de negocio no vive en los endpoints. Los endpoints reciben HTTP y dele
 5. Frontend React basico con login y crear cuenta.
 6. Modelo y CRUD de libros.
 7. Restriccion: cada usuario gestiona solo sus libros.
-8. Docker y docker-compose.
-9. README final con ejemplos de uso y decisiones tecnicas.
+8. Frontend conectado al CRUD real de libros.
+9. Docker y docker-compose.
+10. Migraciones con Alembic.

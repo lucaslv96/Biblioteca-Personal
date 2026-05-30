@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import create_app
-from app.models import User
+from app.models import Book, User
 
 
 @pytest.fixture
@@ -33,7 +33,7 @@ def db_session(tmp_path) -> Generator[Session, None, None]:
         bind=engine,
     )
 
-    Base.metadata.create_all(bind=engine, tables=[User.__table__])
+    Base.metadata.create_all(bind=engine, tables=[User.__table__, Book.__table__])
 
     db = TestingSessionLocal()
     try:

@@ -13,6 +13,9 @@ class UserRepository:
         statement = select(User).where(User.email == email)
         return self.db.scalar(statement)
 
+    def get_by_id(self, user_id: int) -> User | None:
+        return self.db.get(User, user_id)
+
     def create(self, user: User) -> User:
         self.db.add(user)
         try:

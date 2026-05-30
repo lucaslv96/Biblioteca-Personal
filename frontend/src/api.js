@@ -40,4 +40,41 @@ export function loginUser(credentials) {
   });
 }
 
+export function listBooks(token) {
+  return request("/api/v1/books", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+export function createBook(token, book) {
+  return request("/api/v1/books", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(book),
+  });
+}
+
+export function updateBook(token, bookId, book) {
+  return request(`/api/v1/books/${bookId}`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(book),
+  });
+}
+
+export function deleteBook(token, bookId) {
+  return request(`/api/v1/books/${bookId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
 export { API_BASE_URL };
