@@ -1,12 +1,14 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
 
 async function request(path, options = {}) {
+  const { headers, ...requestOptions } = options;
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...requestOptions,
     headers: {
       "Content-Type": "application/json",
-      ...options.headers,
+      ...headers,
     },
-    ...options,
   });
 
   const contentType = response.headers.get("content-type") ?? "";
@@ -15,11 +17,29 @@ async function request(path, options = {}) {
     : await response.text();
 
   if (!response.ok) {
-    const message = typeof body === "object" && body.detail ? body.detail : "Request failed";
-    throw new Error(message);
+    const message =
+      typeof body === "object" && body.detail
+        ? formatApiError(body.detail)
+        : "Request failed";
+    const error = new Error(message);
+    error.status = response.status;
+    error.body = body;
+    throw error;
   }
 
   return body;
+}
+
+function formatApiError(detail) {
+  if (typeof detail === "string") return detail;
+  if (!Array.isArray(detail)) return "Request failed";
+
+  return detail
+    .map((error) => {
+      const location = Array.isArray(error.loc) ? error.loc.slice(1).join(".") : "";
+      return location ? `${location}: ${error.msg}` : error.msg;
+    })
+    .join(" ");
 }
 
 export function getHealth() {
@@ -42,6 +62,24 @@ export function loginUser(credentials) {
 
 export function listBooks(token) {
   return request("/api/v1/books", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+export function searchBookCovers(token, search) {
+  const params = new URLSearchParams({
+    limit: "8",
+  });
+  if (search.isbn) {
+    params.set("isbn", search.isbn);
+  } else {
+    params.set("title", search.title);
+    if (search.author) params.set("author", search.author);
+  }
+
+  return request(`/api/v1/books/covers/search?${params.toString()}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },

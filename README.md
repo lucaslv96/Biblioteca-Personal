@@ -15,6 +15,8 @@ La aplicacion ya tiene:
 - Registro de usuarios.
 - Login con JWT.
 - CRUD de libros protegido por JWT.
+- Busqueda de portadas con Open Library y seleccion manual desde el frontend.
+- Campo ISBN en libros y busqueda de portada priorizando ISBN cuando esta disponible.
 - Cada usuario solo puede gestionar sus propios libros.
 - Frontend basico en React para login y gestion de libros.
 - Hash de passwords con `bcrypt`.
@@ -27,6 +29,7 @@ Pendiente para siguientes pasos:
 - Docker y docker-compose.
 - Migraciones con Alembic.
 - Recuperacion real de password por email.
+- Subida de imagen local para portadas propias.
 
 ## Arquitectura usada
 
@@ -229,6 +232,7 @@ app/
     user.py
   services/
     auth_service.py
+    book_cover_service.py
     book_service.py
     health_service.py
     user_service.py
@@ -268,7 +272,7 @@ frontend/
 | `app/api/deps.py` | Dependencias compartidas de FastAPI, incluyendo usuario autenticado desde JWT. |
 | `app/api/v1/router.py` | Router principal de la version 1 de la API. Agrupa los routers de endpoints. |
 | `app/api/v1/endpoints/auth.py` | Endpoint de login. Valida credenciales y devuelve JWT. |
-| `app/api/v1/endpoints/books.py` | Endpoints CRUD de libros protegidos por autenticacion. |
+| `app/api/v1/endpoints/books.py` | Endpoints CRUD de libros y busqueda de portadas, protegidos por autenticacion. |
 | `app/api/v1/endpoints/health.py` | Endpoint de health check para comprobar que la API responde. |
 | `app/api/v1/endpoints/users.py` | Endpoint de registro de usuarios. Actua como controller. |
 | `app/core/config.py` | Configuracion central de la app usando `pydantic-settings`. |
@@ -282,10 +286,11 @@ frontend/
 | `app/repositories/book_repository.py` | Encapsula consultas y operaciones de persistencia para libros. |
 | `app/repositories/user_repository.py` | Encapsula consultas y operaciones de persistencia para usuarios. |
 | `app/schemas/auth.py` | Schemas Pydantic para login y respuesta con token. |
-| `app/schemas/book.py` | Schemas Pydantic para crear, editar y devolver libros. |
+| `app/schemas/book.py` | Schemas Pydantic para crear, editar, devolver libros y normalizar candidatos de portada. |
 | `app/schemas/health.py` | Schema Pydantic para la respuesta del health check. |
 | `app/schemas/user.py` | Schemas Pydantic para crear y devolver usuarios. |
 | `app/services/auth_service.py` | Logica de negocio del login: autenticar usuario y generar token. |
+| `app/services/book_cover_service.py` | Consulta Open Library y transforma sus resultados en candidatos de portada simples para la API. |
 | `app/services/book_service.py` | Logica de negocio del CRUD de libros y filtrado por usuario. |
 | `app/services/health_service.py` | Logica simple para devolver informacion de estado de la API. |
 | `app/services/user_service.py` | Logica de negocio del registro de usuarios. |
@@ -296,7 +301,7 @@ frontend/
 | --- | --- |
 | `tests/conftest.py` | Fixtures compartidas: app de test, SQLite temporal y override de `get_db`. |
 | `tests/test_auth.py` | Tests del login correcto y rechazo de credenciales invalidas. |
-| `tests/test_books.py` | Tests del CRUD de libros, autenticacion y aislamiento por usuario. |
+| `tests/test_books.py` | Tests del CRUD de libros, portadas, autenticacion y aislamiento por usuario. |
 | `tests/test_health.py` | Test del endpoint `GET /api/v1/health`. |
 | `tests/test_users.py` | Tests del registro de usuario y rechazo de emails duplicados. |
 
@@ -308,8 +313,8 @@ frontend/
 | `frontend/package-lock.json` | Versiones exactas instaladas por npm para reproducir el entorno. |
 | `frontend/vite.config.js` | Configuracion de Vite: root, servidor local, puerto y salida del build. |
 | `frontend/index.html` | HTML base donde Vite monta la aplicacion React. |
-| `frontend/src/api.js` | Cliente HTTP para llamar al backend FastAPI. |
-| `frontend/src/main.jsx` | Componentes React principales: login, crear cuenta, recuperar password y CRUD de libros. |
+| `frontend/src/api.js` | Cliente HTTP para llamar al backend FastAPI, incluyendo busqueda de portadas. |
+| `frontend/src/main.jsx` | Componentes React principales: login, crear cuenta, recuperar password, CRUD de libros y seleccion de portada. |
 | `frontend/src/styles.css` | Estilos visuales del frontend. |
 
 ## Base de datos
@@ -386,8 +391,12 @@ Campos actuales:
 | `id` | Integer | Identificador principal del libro. |
 | `title` | String | Titulo del libro. |
 | `author` | String nullable | Autor opcional. |
+| `isbn` | String nullable | ISBN opcional usado para identificar ediciones y buscar portadas. |
 | `description` | Text nullable | Notas o descripcion opcional. |
 | `publication_year` | Integer nullable | Ano de publicacion opcional. |
+| `cover_url` | String nullable | URL de la portada seleccionada o indicada manualmente. |
+| `cover_source` | String nullable | Fuente de la portada, por ejemplo `open_library`. |
+| `external_id` | String nullable | Identificador externo del resultado usado como referencia. |
 | `is_read` | Boolean | Indica si el usuario ya ha leido el libro. |
 | `owner_id` | Integer | Usuario propietario del libro. |
 | `created_at` | DateTime | Fecha de creacion en UTC. |
@@ -513,8 +522,12 @@ Respuesta:
     "id": 1,
     "title": "Clean Code",
     "author": "Robert C. Martin",
+    "isbn": "9780132350884",
     "description": "Notas personales",
     "publication_year": 2008,
+    "cover_url": "https://covers.openlibrary.org/b/id/123-L.jpg",
+    "cover_source": "open_library",
+    "external_id": "/works/OL123W",
     "is_read": true,
     "owner_id": 1,
     "created_at": "2026-05-30T10:00:00",
@@ -536,11 +549,48 @@ Body:
 {
   "title": "Clean Code",
   "author": "Robert C. Martin",
+  "isbn": "9780132350884",
   "description": "Notas personales",
   "publication_year": 2008,
+  "cover_url": "https://covers.openlibrary.org/b/id/123-L.jpg",
+  "cover_source": "open_library",
+  "external_id": "/works/OL123W",
   "is_read": true
 }
 ```
+
+### Buscar portadas
+
+```http
+GET /api/v1/books/covers/search?title=Clean%20Code&author=Robert%20C.%20Martin&limit=8
+Authorization: Bearer <access_token>
+```
+
+Tambien puede buscar por ISBN:
+
+```http
+GET /api/v1/books/covers/search?isbn=9780132350884&limit=8
+Authorization: Bearer <access_token>
+```
+
+Respuesta:
+
+```json
+[
+  {
+    "title": "Clean Code",
+    "author": "Robert C. Martin",
+    "isbn": "9780132350884",
+    "publication_year": 2008,
+    "cover_url": "https://covers.openlibrary.org/b/id/123-L.jpg",
+    "thumbnail_url": "https://covers.openlibrary.org/b/id/123-M.jpg",
+    "source": "open_library",
+    "external_id": "/works/OL123W"
+  }
+]
+```
+
+Este endpoint no guarda nada por si solo. Devuelve candidatos para que el usuario elija una portada y despues esa URL se guarda con el libro. Si se envia `isbn`, se prioriza la busqueda por ISBN. Si no hay ISBN, se busca por titulo y autor opcional.
 
 ### Editar libro
 
@@ -586,6 +636,9 @@ Permite:
 - Entrar en una pantalla principal cuando las credenciales son correctas.
 - Registrar usuarios con `POST /api/v1/users`.
 - Crear, listar, editar, marcar como leidos y borrar libros.
+- Guardar ISBN de cada libro.
+- Pegar una URL manual de portada.
+- Buscar portadas por ISBN o por titulo/autor y elegir una opcion de Open Library.
 - Acceder a una pantalla de recuperacion de password pendiente de backend.
 
 Por defecto llama al backend en:
@@ -623,6 +676,8 @@ Esto permite probar endpoints reales sin tocar datos locales.
 - **Ownership por usuario**: los libros siempre se consultan por `owner_id`, asi un usuario no puede acceder a libros de otro.
 - **Repository pattern**: separa SQLAlchemy de la logica de negocio.
 - **Service layer**: mantiene las reglas de negocio fuera de los endpoints.
+- **Open Library**: se usa como fuente externa de portadas; la API propia normaliza sus resultados antes de enviarlos al frontend.
+- **ISBN opcional**: cuando existe, se usa como identificador mas preciso para buscar portadas de una edicion concreta.
 - **pytest**: permite validar el comportamiento de la API de forma automatizada.
 - **App factory**: `create_app(init_database=False)` facilita crear una app especial para tests.
 
@@ -711,5 +766,7 @@ La logica de negocio no vive en los endpoints. Los endpoints reciben HTTP y dele
 6. Modelo y CRUD de libros.
 7. Restriccion: cada usuario gestiona solo sus libros.
 8. Frontend conectado al CRUD real de libros.
-9. Docker y docker-compose.
-10. Migraciones con Alembic.
+9. Busqueda y seleccion de portadas desde Open Library.
+10. Campo ISBN y busqueda de portadas priorizando ISBN.
+11. Docker y docker-compose.
+12. Migraciones con Alembic.

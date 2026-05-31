@@ -5,12 +5,14 @@ import {
   ArrowLeft,
   BookOpen,
   CheckCircle2,
+  ImagePlus,
   KeyRound,
   Library,
   LogOut,
   Pencil,
   Plus,
   Save,
+  Search,
   Sparkles,
   Trash2,
   UserPlus,
@@ -23,6 +25,7 @@ import {
   deleteBook,
   listBooks,
   loginUser,
+  searchBookCovers,
   updateBook,
 } from "./api";
 import "./styles.css";
@@ -41,16 +44,20 @@ const initialRegisterForm = {
 const initialBookForm = {
   title: "",
   author: "",
+  isbn: "",
   publication_year: "",
   description: "",
+  cover_url: "",
+  cover_source: "",
+  external_id: "",
   is_read: false,
 };
 
 function App() {
-  const storedUser = getStoredUser();
-  const [view, setView] = useState(storedUser ? "home" : "login");
-  const [currentUser, setCurrentUser] = useState(storedUser);
-  const [authToken, setAuthToken] = useState(getStoredToken());
+  const storedSession = getStoredSession();
+  const [view, setView] = useState(storedSession ? "home" : "login");
+  const [currentUser, setCurrentUser] = useState(storedSession?.user ?? null);
+  const [authToken, setAuthToken] = useState(storedSession?.token ?? null);
   const [loginPrefillEmail, setLoginPrefillEmail] = useState("");
 
   function openLogin(email = "") {
@@ -67,8 +74,7 @@ function App() {
   }
 
   function logout() {
-    sessionStorage.removeItem("authToken");
-    sessionStorage.removeItem("authUser");
+    clearStoredSession();
     setAuthToken(null);
     setCurrentUser(null);
     setView("login");
@@ -427,6 +433,18 @@ function HomeView({ currentUser, authToken, onLogout }) {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [coverCandidates, setCoverCandidates] = useState([]);
+  const [coverMessage, setCoverMessage] = useState("");
+  const [isSearchingCovers, setIsSearchingCovers] = useState(false);
+
+  function handleRequestError(requestError) {
+    if (requestError.status === 401) {
+      onLogout();
+      return;
+    }
+
+    setError(requestError.message);
+  }
 
   useEffect(() => {
     async function loadBooks() {
@@ -439,7 +457,7 @@ function HomeView({ currentUser, authToken, onLogout }) {
         const data = await listBooks(authToken);
         setBooks(data);
       } catch (requestError) {
-        setError(requestError.message);
+        handleRequestError(requestError);
       } finally {
         setIsLoading(false);
       }
@@ -459,17 +477,25 @@ function HomeView({ currentUser, authToken, onLogout }) {
   function resetBookForm() {
     setBookForm(initialBookForm);
     setEditingBookId(null);
+    setCoverCandidates([]);
+    setCoverMessage("");
   }
 
   function startEdit(book) {
     setBookForm({
       title: book.title,
       author: book.author ?? "",
+      isbn: book.isbn ?? "",
       publication_year: book.publication_year ? String(book.publication_year) : "",
       description: book.description ?? "",
+      cover_url: book.cover_url ?? "",
+      cover_source: book.cover_source ?? "",
+      external_id: book.external_id ?? "",
       is_read: book.is_read,
     });
     setEditingBookId(book.id);
+    setCoverCandidates([]);
+    setCoverMessage("");
   }
 
   async function submitBook(event) {
@@ -489,7 +515,7 @@ function HomeView({ currentUser, authToken, onLogout }) {
       });
       resetBookForm();
     } catch (requestError) {
-      setError(requestError.message);
+      handleRequestError(requestError);
     } finally {
       setIsSaving(false);
     }
@@ -507,7 +533,7 @@ function HomeView({ currentUser, authToken, onLogout }) {
         ),
       );
     } catch (requestError) {
-      setError(requestError.message);
+      handleRequestError(requestError);
     }
   }
 
@@ -518,8 +544,66 @@ function HomeView({ currentUser, authToken, onLogout }) {
       setBooks((currentBooks) => currentBooks.filter((book) => book.id !== bookId));
       if (editingBookId === bookId) resetBookForm();
     } catch (requestError) {
-      setError(requestError.message);
+      handleRequestError(requestError);
     }
+  }
+
+  async function searchCovers() {
+    const isbn = bookForm.isbn.trim();
+    const title = bookForm.title.trim();
+    if (!isbn && !title) {
+      setCoverMessage("Escribe un ISBN o un titulo antes de buscar portadas.");
+      return;
+    }
+
+    setError("");
+    setCoverMessage("");
+    setCoverCandidates([]);
+    setIsSearchingCovers(true);
+
+    try {
+      const candidates = await searchBookCovers(authToken, {
+        title: isbn ? "" : title,
+        author: bookForm.author.trim(),
+        isbn,
+      });
+      setCoverCandidates(candidates);
+      if (candidates.length === 0) {
+        setCoverMessage("No encontramos portadas para ese libro.");
+      }
+    } catch (requestError) {
+      handleRequestError(requestError);
+    } finally {
+      setIsSearchingCovers(false);
+    }
+  }
+
+  function selectCover(candidate) {
+    setBookForm((currentForm) => {
+      const publicationYear = candidate.publication_year || currentForm.publication_year;
+
+      return {
+        ...currentForm,
+        title: candidate.title || currentForm.title,
+        author: candidate.author || currentForm.author,
+        isbn: candidate.isbn || currentForm.isbn,
+        publication_year: publicationYear ? String(publicationYear) : "",
+        cover_url: candidate.cover_url,
+        cover_source: candidate.source,
+        external_id: candidate.external_id,
+      };
+    });
+    setCoverMessage("Portada y datos del libro seleccionados.");
+  }
+
+  function clearCover() {
+    setBookForm((currentForm) => ({
+      ...currentForm,
+      cover_url: "",
+      cover_source: "",
+      external_id: "",
+    }));
+    setCoverMessage("");
   }
 
   return (
@@ -537,14 +621,6 @@ function HomeView({ currentUser, authToken, onLogout }) {
           <LogOut size={17} aria-hidden="true" />
           <span>Salir</span>
         </button>
-      </div>
-
-      <div className="welcome-band">
-        <Library size={30} aria-hidden="true" />
-        <div>
-          <span className="muted">Sesion iniciada</span>
-          <strong>{currentUser?.full_name || currentUser?.email}</strong>
-        </div>
       </div>
 
       <div className="library-grid">
@@ -580,6 +656,18 @@ function HomeView({ currentUser, authToken, onLogout }) {
           </label>
 
           <label>
+            ISBN
+            <input
+              name="isbn"
+              type="text"
+              value={bookForm.isbn}
+              onChange={updateBookField}
+              placeholder="9780140449136"
+              maxLength={20}
+            />
+          </label>
+
+          <label>
             Ano
             <input
               name="publication_year"
@@ -591,6 +679,72 @@ function HomeView({ currentUser, authToken, onLogout }) {
               max="3000"
             />
           </label>
+
+          <div className="cover-section">
+            <label>
+              Portada
+              <input
+                name="cover_url"
+                type="url"
+                value={bookForm.cover_url}
+                onChange={updateBookField}
+                placeholder="https://covers.openlibrary.org/..."
+                maxLength={500}
+              />
+            </label>
+
+            <div className="cover-controls">
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={searchCovers}
+                disabled={isSearchingCovers}
+              >
+                <Search size={17} aria-hidden="true" />
+                <span>{isSearchingCovers ? "Buscando..." : "Buscar portada"}</span>
+              </button>
+              {bookForm.cover_url && (
+                <button className="ghost-button" type="button" onClick={clearCover}>
+                  <X size={17} aria-hidden="true" />
+                  <span>Quitar</span>
+                </button>
+              )}
+            </div>
+
+            {bookForm.cover_url && (
+              <div className="cover-preview">
+                <img src={bookForm.cover_url} alt="Portada seleccionada" />
+                <span>Portada seleccionada</span>
+              </div>
+            )}
+
+            {coverMessage && <p className="cover-message">{coverMessage}</p>}
+
+            {coverCandidates.length > 0 && (
+              <div className="cover-results" aria-label="Portadas encontradas">
+                {coverCandidates.map((candidate) => (
+                  <button
+                    className="cover-option"
+                    key={`${candidate.source}-${candidate.external_id}-${candidate.cover_url}`}
+                    type="button"
+                    onClick={() => selectCover(candidate)}
+                  >
+                    <img src={candidate.thumbnail_url} alt={`Portada de ${candidate.title}`} />
+                    <span className="cover-option-copy">
+                      <strong>{candidate.title}</strong>
+                      <small>
+                        {[
+                          candidate.author,
+                          candidate.publication_year,
+                          candidate.isbn ? `ISBN ${candidate.isbn}` : null,
+                        ].filter(Boolean).join(" - ") || "Sin detalles"}
+                      </small>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           <label>
             Notas
@@ -653,7 +807,15 @@ function HomeView({ currentUser, authToken, onLogout }) {
             <div className="book-list">
               {books.map((book) => (
                 <article className="book-item" key={book.id}>
-                  <div>
+                  <div className="book-cover">
+                    {book.cover_url ? (
+                      <img src={book.cover_url} alt={`Portada de ${book.title}`} />
+                    ) : (
+                      <ImagePlus size={24} aria-hidden="true" />
+                    )}
+                  </div>
+
+                  <div className="book-content">
                     <div className="book-title-row">
                       <h3>{book.title}</h3>
                       <span className={`read-badge ${book.is_read ? "read-badge--done" : ""}`}>
@@ -661,7 +823,11 @@ function HomeView({ currentUser, authToken, onLogout }) {
                       </span>
                     </div>
                     <p className="book-meta">
-                      {[book.author, book.publication_year].filter(Boolean).join(" - ") || "Sin autor"}
+                      {[
+                        book.author,
+                        book.publication_year,
+                        book.isbn ? `ISBN ${book.isbn}` : null,
+                      ].filter(Boolean).join(" - ") || "Sin autor"}
                     </p>
                     {book.description && <p className="book-description">{book.description}</p>}
                   </div>
@@ -691,29 +857,40 @@ function toBookPayload(bookForm) {
   return {
     title: bookForm.title.trim(),
     author: bookForm.author.trim() || null,
+    isbn: bookForm.isbn.trim() || null,
     publication_year: bookForm.publication_year
       ? Number(bookForm.publication_year)
       : null,
     description: bookForm.description.trim() || null,
+    cover_url: bookForm.cover_url.trim() || null,
+    cover_source: bookForm.cover_source || null,
+    external_id: bookForm.external_id || null,
     is_read: bookForm.is_read,
   };
 }
 
-function getStoredUser() {
+function getStoredSession() {
+  const token = sessionStorage.getItem("authToken");
   const user = sessionStorage.getItem("authUser");
-  if (!user) return null;
+  if (!token || !user) {
+    clearStoredSession();
+    return null;
+  }
 
   try {
-    return JSON.parse(user);
+    return {
+      token,
+      user: JSON.parse(user),
+    };
   } catch {
-    sessionStorage.removeItem("authToken");
-    sessionStorage.removeItem("authUser");
+    clearStoredSession();
     return null;
   }
 }
 
-function getStoredToken() {
-  return sessionStorage.getItem("authToken");
+function clearStoredSession() {
+  sessionStorage.removeItem("authToken");
+  sessionStorage.removeItem("authUser");
 }
 
 createRoot(document.getElementById("root")).render(

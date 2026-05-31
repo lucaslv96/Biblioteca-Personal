@@ -12,8 +12,12 @@ class Book(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     title: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
     author: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    isbn: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     publication_year: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    cover_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    cover_source: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    external_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     is_read: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     created_at: Mapped[datetime] = mapped_column(

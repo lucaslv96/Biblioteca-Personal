@@ -1,6 +1,9 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from app.api.v1.endpoints.books import get_book_cover_search_service
+from app.schemas.book import BookCoverCandidate
+
 
 async def register_and_login(
     client: AsyncClient,
@@ -42,7 +45,11 @@ async def test_create_and_list_books_for_authenticated_user(
             json={
                 "title": "Clean Code",
                 "author": "Robert C. Martin",
+                "isbn": "9780132350884",
                 "publication_year": 2008,
+                "cover_url": "https://covers.openlibrary.org/b/id/123-L.jpg",
+                "cover_source": "open_library",
+                "external_id": "/works/OL123W",
                 "is_read": True,
             },
         )
@@ -55,6 +62,10 @@ async def test_create_and_list_books_for_authenticated_user(
     created = create_response.json()
     assert created["title"] == "Clean Code"
     assert created["author"] == "Robert C. Martin"
+    assert created["isbn"] == "9780132350884"
+    assert created["cover_url"] == "https://covers.openlibrary.org/b/id/123-L.jpg"
+    assert created["cover_source"] == "open_library"
+    assert created["external_id"] == "/works/OL123W"
     assert created["is_read"] is True
 
     assert list_response.status_code == 200
@@ -96,11 +107,116 @@ async def test_books_are_scoped_to_authenticated_user(test_app, override_get_db)
 
 
 @pytest.mark.anyio
+async def test_search_book_cover_candidates(test_app, override_get_db) -> None:
+    class FakeBookCoverSearchService:
+        async def search(
+            self,
+            title: str | None = None,
+            author: str | None = None,
+            isbn: str | None = None,
+            limit: int = 8,
+        ) -> list[BookCoverCandidate]:
+            assert title == "Clean Code"
+            assert author == "Robert C. Martin"
+            assert isbn is None
+            assert limit == 3
+            return [
+                BookCoverCandidate(
+                    title="Clean Code",
+                    author="Robert C. Martin",
+                    isbn="9780132350884",
+                    publication_year=2008,
+                    cover_url="https://covers.openlibrary.org/b/id/123-L.jpg",
+                    thumbnail_url="https://covers.openlibrary.org/b/id/123-M.jpg",
+                    source="open_library",
+                    external_id="/works/OL123W",
+                )
+            ]
+
+    test_app.dependency_overrides[get_book_cover_search_service] = FakeBookCoverSearchService
+
+    async with AsyncClient(
+        transport=ASGITransport(app=test_app),
+        base_url="http://test",
+    ) as client:
+        token = await register_and_login(client, "covers@example.com")
+        response = await client.get(
+            "/api/v1/books/covers/search",
+            params={"title": "Clean Code", "author": "Robert C. Martin", "limit": 3},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+    assert response.status_code == 200
+    candidates = response.json()
+    assert candidates == [
+        {
+            "title": "Clean Code",
+            "author": "Robert C. Martin",
+            "isbn": "9780132350884",
+            "publication_year": 2008,
+            "cover_url": "https://covers.openlibrary.org/b/id/123-L.jpg",
+            "thumbnail_url": "https://covers.openlibrary.org/b/id/123-M.jpg",
+            "source": "open_library",
+            "external_id": "/works/OL123W",
+        }
+    ]
+
+
+@pytest.mark.anyio
+async def test_search_book_cover_candidates_by_isbn(test_app, override_get_db) -> None:
+    class FakeBookCoverSearchService:
+        async def search(
+            self,
+            title: str | None = None,
+            author: str | None = None,
+            isbn: str | None = None,
+            limit: int = 8,
+        ) -> list[BookCoverCandidate]:
+            assert title is None
+            assert author is None
+            assert isbn == "9780140449136"
+            assert limit == 8
+            return [
+                BookCoverCandidate(
+                    title="Crime and Punishment",
+                    author="Fyodor Dostoevsky",
+                    isbn="9780140449136",
+                    publication_year=2002,
+                    cover_url="https://covers.openlibrary.org/b/isbn/9780140449136-L.jpg",
+                    thumbnail_url="https://covers.openlibrary.org/b/isbn/9780140449136-M.jpg",
+                    source="open_library",
+                    external_id="/books/OL7353617M",
+                )
+            ]
+
+    test_app.dependency_overrides[get_book_cover_search_service] = FakeBookCoverSearchService
+
+    async with AsyncClient(
+        transport=ASGITransport(app=test_app),
+        base_url="http://test",
+    ) as client:
+        token = await register_and_login(client, "isbn-covers@example.com")
+        response = await client.get(
+            "/api/v1/books/covers/search",
+            params={"isbn": "9780140449136"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+    assert response.status_code == 200
+    assert response.json()[0]["isbn"] == "9780140449136"
+
+
+@pytest.mark.anyio
 async def test_books_require_authentication(test_app, override_get_db) -> None:
     async with AsyncClient(
         transport=ASGITransport(app=test_app),
         base_url="http://test",
     ) as client:
         response = await client.get("/api/v1/books")
+        cover_search_response = await client.get(
+            "/api/v1/books/covers/search",
+            params={"title": "Clean Code"},
+        )
 
     assert response.status_code == 401
+    assert cover_search_response.status_code == 401
