@@ -1,8 +1,8 @@
 :root {
   color: #0f172a;
   background:
-    linear-gradient(180deg, #f8fafc 0%, #eef2ff 48%, #f8fafc 100%),
-    #f8fafc;
+    linear-gradient(180deg, #f6f7f9 0%, #eef1f4 54%, #f9fafb 100%),
+    #f6f7f9;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
@@ -97,12 +97,44 @@ h2 {
   gap: 8px;
   min-height: 40px;
   padding: 0 14px;
-  border: 1px solid #dbe3ef;
+  border: 1px solid #cbd5e1;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.94);
+  background: #ffffff;
   color: #0f172a;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.07);
   white-space: nowrap;
+}
+
+.topbar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #334155;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.07);
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.icon-button:hover {
+  transform: translateY(-1px);
+  border-color: #94a3b8;
+  background: #f8fafc;
+  color: #047857;
 }
 
 .auth-layout {
@@ -116,10 +148,10 @@ h2 {
 .auth-card,
 .home-panel {
   min-width: 0;
-  border: 1px solid #dbe3ef;
+  border: 1px solid #cbd5e1;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.07);
 }
 
 .intro-panel {
@@ -128,7 +160,7 @@ h2 {
   align-content: start;
   gap: 18px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 251, 255, 0.96)),
+    linear-gradient(180deg, #ffffff 0%, #f7f8fa 100%),
     #fff;
 }
 
@@ -157,9 +189,9 @@ h2 {
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #d1d5db;
   border-radius: 12px;
-  background: #f8fafc;
+  background: #f9fafb;
   color: #1e293b;
 }
 
@@ -177,6 +209,17 @@ h2 {
   display: grid;
   gap: 8px;
   margin-bottom: 20px;
+}
+
+.home-header,
+.book-list-header,
+.book-form .panel-heading {
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.book-list-header {
+  margin-bottom: 16px;
 }
 
 .panel-copy {
@@ -225,8 +268,8 @@ textarea {
 
 input:focus,
 textarea:focus {
-  border-color: #1f6feb;
-  box-shadow: 0 0 0 4px rgba(31, 111, 235, 0.12);
+  border-color: #059669;
+  box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.14);
 }
 
 .primary-button,
@@ -259,8 +302,8 @@ textarea:focus {
 .primary-button {
   width: 100%;
   color: #ffffff;
-  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
-  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
+  background: linear-gradient(180deg, #059669 0%, #047857 100%);
+  box-shadow: 0 12px 24px rgba(5, 150, 105, 0.18);
 }
 
 .secondary-button {
@@ -294,7 +337,7 @@ textarea:focus {
 }
 
 .primary-button:hover {
-  box-shadow: 0 16px 28px rgba(37, 99, 235, 0.22);
+  box-shadow: 0 16px 28px rgba(5, 150, 105, 0.22);
 }
 
 .secondary-button:hover {
@@ -344,7 +387,7 @@ textarea:focus {
 .book-item,
 .empty-state {
   border-radius: 16px;
-  border: 1px solid #dbe3ef;
+  border: 1px solid #cbd5e1;
 }
 
 .welcome-band {
@@ -354,7 +397,7 @@ textarea:focus {
   min-height: 74px;
   padding: 16px;
   margin-bottom: 16px;
-  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  background: #f9fafb;
 }
 
 .welcome-band strong {
@@ -374,6 +417,7 @@ textarea:focus {
 .book-list-section {
   background: #ffffff;
   padding: 18px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.045);
 }
 
 .book-form {
@@ -406,9 +450,9 @@ textarea:focus {
   gap: 10px;
   min-height: 76px;
   padding: 10px;
-  border: 1px solid #dbe3ef;
+  border: 1px solid #cbd5e1;
   border-radius: 14px;
-  background: #f8fafc;
+  background: #f9fafb;
   color: #475569;
   font-size: 0.9rem;
   font-weight: 700;
@@ -427,7 +471,7 @@ textarea:focus {
   width: 48px;
   height: 60px;
   border-radius: 8px;
-  border: 1px solid #dbe3ef;
+  border: 1px solid #cbd5e1;
   background: #ffffff;
 }
 
@@ -447,7 +491,7 @@ textarea:focus {
   display: grid;
   gap: 7px;
   min-width: 0;
-  border: 1px solid #dbe3ef;
+  border: 1px solid #cbd5e1;
   border-radius: 12px;
   background: #ffffff;
   color: #334155;
@@ -456,8 +500,8 @@ textarea:focus {
 }
 
 .cover-option:hover {
-  border-color: #93c5fd;
-  background: #eff6ff;
+  border-color: #34d399;
+  background: #ecfdf5;
 }
 
 .cover-option img {
@@ -519,7 +563,7 @@ textarea:focus {
   place-items: center;
   gap: 8px;
   min-height: 180px;
-  background: #f8fafc;
+  background: #f9fafb;
   color: #64748b;
   text-align: center;
 }
@@ -535,6 +579,7 @@ textarea:focus {
   gap: 14px;
   padding: 16px;
   background: #ffffff;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
 }
 
 .book-cover {
@@ -543,9 +588,9 @@ textarea:focus {
   width: 72px;
   height: 98px;
   overflow: hidden;
-  border: 1px solid #dbe3ef;
+  border: 1px solid #cbd5e1;
   border-radius: 12px;
-  background: #f8fafc;
+  background: #f3f4f6;
   color: #94a3b8;
 }
 
@@ -608,15 +653,15 @@ textarea:focus {
   justify-content: center;
   width: 34px;
   height: 34px;
-  border: 1px solid #dbe3ef;
+  border: 1px solid #cbd5e1;
   border-radius: 10px;
-  background: #f8fafc;
+  background: #ffffff;
   color: #334155;
 }
 
 .book-actions button:hover {
-  background: #eef2ff;
-  color: #1d4ed8;
+  background: #ecfdf5;
+  color: #047857;
 }
 
 @media (max-width: 900px) {
@@ -628,6 +673,12 @@ textarea:focus {
   .topbar {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .topbar-actions {
+    width: 100%;
+    align-items: flex-start;
+    flex-wrap: wrap;
   }
 
   .auth-layout,
@@ -660,4 +711,122 @@ textarea:focus {
   .cover-controls {
     grid-template-columns: 1fr;
   }
+}
+
+:root[data-theme="dark"] {
+  color: #e7e5e4;
+  background:
+    linear-gradient(180deg, #18181b 0%, #111111 54%, #1c1917 100%),
+    #111111;
+}
+
+:root[data-theme="dark"] h1,
+:root[data-theme="dark"] h2,
+:root[data-theme="dark"] label,
+:root[data-theme="dark"] .feature-list li,
+:root[data-theme="dark"] .book-title-row h3,
+:root[data-theme="dark"] .welcome-band strong,
+:root[data-theme="dark"] .user-chip,
+:root[data-theme="dark"] .icon-button {
+  color: #f8fafc;
+}
+
+:root[data-theme="dark"] .eyebrow,
+:root[data-theme="dark"] .section-label,
+:root[data-theme="dark"] .muted,
+:root[data-theme="dark"] .panel-copy,
+:root[data-theme="dark"] .intro-copy,
+:root[data-theme="dark"] .book-meta,
+:root[data-theme="dark"] .book-description,
+:root[data-theme="dark"] .cover-message,
+:root[data-theme="dark"] .ghost-button,
+:root[data-theme="dark"] .back-button {
+  color: #a8a29e;
+}
+
+:root[data-theme="dark"] .intro-panel,
+:root[data-theme="dark"] .auth-card,
+:root[data-theme="dark"] .home-panel,
+:root[data-theme="dark"] .book-form,
+:root[data-theme="dark"] .book-list-section,
+:root[data-theme="dark"] .book-item,
+:root[data-theme="dark"] .empty-state,
+:root[data-theme="dark"] .welcome-band,
+:root[data-theme="dark"] .feature-list li,
+:root[data-theme="dark"] .cover-preview,
+:root[data-theme="dark"] .cover-option,
+:root[data-theme="dark"] .book-cover,
+:root[data-theme="dark"] .user-chip,
+:root[data-theme="dark"] .icon-button {
+  border-color: #3f3f46;
+  background: #27272a;
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.24);
+}
+
+:root[data-theme="dark"] .intro-panel,
+:root[data-theme="dark"] .welcome-band {
+  background: linear-gradient(180deg, #242428 0%, #1f1f23 100%);
+}
+
+:root[data-theme="dark"] .home-header,
+:root[data-theme="dark"] .book-list-header,
+:root[data-theme="dark"] .book-form .panel-heading {
+  border-bottom-color: #3f3f46;
+}
+
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] textarea {
+  border-color: #52525b;
+  background: #18181b;
+  color: #fafaf9;
+}
+
+:root[data-theme="dark"] input::placeholder,
+:root[data-theme="dark"] textarea::placeholder {
+  color: #78716c;
+}
+
+:root[data-theme="dark"] input:focus,
+:root[data-theme="dark"] textarea:focus {
+  border-color: #34d399;
+  box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.16);
+}
+
+:root[data-theme="dark"] .secondary-button {
+  border-color: #52525b;
+  background: #18181b;
+  color: #fafaf9;
+}
+
+:root[data-theme="dark"] .secondary-button:hover,
+:root[data-theme="dark"] .icon-button:hover,
+:root[data-theme="dark"] .cover-option:hover,
+:root[data-theme="dark"] .book-actions button:hover {
+  border-color: #34d399;
+  background: #064e3b;
+  color: #d1fae5;
+}
+
+:root[data-theme="dark"] .book-actions button {
+  border-color: #52525b;
+  background: #18181b;
+  color: #d6d3d1;
+}
+
+:root[data-theme="dark"] .read-badge {
+  background: #431407;
+  color: #fed7aa;
+}
+
+:root[data-theme="dark"] .read-badge--done {
+  background: #052e16;
+  color: #bbf7d0;
+}
+
+:root[data-theme="dark"] .cover-option-copy strong {
+  color: #e2e8f0;
+}
+
+:root[data-theme="dark"] .cover-option-copy small {
+  color: #94a3b8;
 }

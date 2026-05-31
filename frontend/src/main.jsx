@@ -9,11 +9,13 @@ import {
   KeyRound,
   Library,
   LogOut,
+  Moon,
   Pencil,
   Plus,
   Save,
   Search,
   Sparkles,
+  Sun,
   Trash2,
   UserPlus,
   X,
@@ -59,6 +61,12 @@ function App() {
   const [currentUser, setCurrentUser] = useState(storedSession?.user ?? null);
   const [authToken, setAuthToken] = useState(storedSession?.token ?? null);
   const [loginPrefillEmail, setLoginPrefillEmail] = useState("");
+  const [isDarkMode, setIsDarkMode] = useState(getStoredTheme);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = isDarkMode ? "dark" : "light";
+    localStorage.setItem("theme", isDarkMode ? "dark" : "light");
+  }, [isDarkMode]);
 
   function openLogin(email = "") {
     setLoginPrefillEmail(email);
@@ -90,9 +98,29 @@ function App() {
           </div>
 
           {currentUser && (
-            <div className="user-chip">
-              <Library size={14} aria-hidden="true" />
-              <span>{currentUser.full_name || currentUser.email}</span>
+            <div className="topbar-actions">
+              <div className="user-chip">
+                <Library size={14} aria-hidden="true" />
+                <span>{currentUser.full_name || currentUser.email}</span>
+              </div>
+              <button
+                className="icon-button"
+                type="button"
+                aria-label={isDarkMode ? "Activar modo claro" : "Activar modo noche"}
+                title={isDarkMode ? "Modo claro" : "Modo noche"}
+                onClick={() => setIsDarkMode((currentMode) => !currentMode)}
+              >
+                {isDarkMode ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
+              </button>
+              <button
+                className="icon-button"
+                type="button"
+                aria-label="Salir"
+                title="Salir"
+                onClick={logout}
+              >
+                <LogOut size={18} aria-hidden="true" />
+              </button>
             </div>
           )}
         </header>
@@ -613,14 +641,6 @@ function HomeView({ currentUser, authToken, onLogout }) {
           <p className="section-label">Principal</p>
           <h2>Mi biblioteca</h2>
         </div>
-        <button
-          className="secondary-button secondary-button--compact"
-          type="button"
-          onClick={onLogout}
-        >
-          <LogOut size={17} aria-hidden="true" />
-          <span>Salir</span>
-        </button>
       </div>
 
       <div className="library-grid">
@@ -891,6 +911,10 @@ function getStoredSession() {
 function clearStoredSession() {
   sessionStorage.removeItem("authToken");
   sessionStorage.removeItem("authUser");
+}
+
+function getStoredTheme() {
+  return localStorage.getItem("theme") === "dark";
 }
 
 createRoot(document.getElementById("root")).render(
