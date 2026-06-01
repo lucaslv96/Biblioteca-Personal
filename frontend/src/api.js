@@ -43,25 +43,25 @@ function formatApiError(detail) {
 }
 
 export function getHealth() {
-  return request("/api/v1/health");
+  return request("/api/health");
 }
 
 export function createUser(user) {
-  return request("/api/v1/users", {
+  return request("/api/users", {
     method: "POST",
     body: JSON.stringify(user),
   });
 }
 
 export function loginUser(credentials) {
-  return request("/api/v1/auth/login", {
+  return request("/api/auth/login", {
     method: "POST",
     body: JSON.stringify(credentials),
   });
 }
 
 export function listBooks(token) {
-  return request("/api/v1/books", {
+  return request("/api/books", {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -79,7 +79,7 @@ export function searchBookCovers(token, search) {
     if (search.author) params.set("author", search.author);
   }
 
-  return request(`/api/v1/books/covers/search?${params.toString()}`, {
+  return request(`/api/books/covers/search?${params.toString()}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -87,7 +87,7 @@ export function searchBookCovers(token, search) {
 }
 
 export function createBook(token, book) {
-  return request("/api/v1/books", {
+  return request("/api/books", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -97,7 +97,7 @@ export function createBook(token, book) {
 }
 
 export function updateBook(token, bookId, book) {
-  return request(`/api/v1/books/${bookId}`, {
+  return request(`/api/books/${bookId}`, {
     method: "PATCH",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -107,7 +107,7 @@ export function updateBook(token, bookId, book) {
 }
 
 export function deleteBook(token, bookId) {
-  return request(`/api/v1/books/${bookId}`, {
+  return request(`/api/books/${bookId}`, {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${token}`,

@@ -52,10 +52,9 @@ async def search_book_covers(
     author: str | None = Query(default=None, max_length=150),
     isbn: str | None = Query(default=None, min_length=10, max_length=20),
     limit: int = Query(default=8, ge=1, le=12),
-    current_user: User = Depends(get_current_user),
+    _current_user: User = Depends(get_current_user),
     cover_search_service: BookCoverSearchService = Depends(get_book_cover_search_service),
 ) -> list[BookCoverCandidate]:
-    _ = current_user
     if not title and not isbn:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

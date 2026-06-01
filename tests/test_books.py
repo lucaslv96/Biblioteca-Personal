@@ -1,7 +1,7 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from app.api.v1.endpoints.books import get_book_cover_search_service
+from app.api.endpoints.books import get_book_cover_search_service
 from app.schemas.book import BookCoverCandidate
 
 
@@ -11,7 +11,7 @@ async def register_and_login(
     password: str = "supersecret",
 ) -> str:
     await client.post(
-        "/api/v1/users",
+        "/api/users",
         json={
             "email": email,
             "password": password,
@@ -19,7 +19,7 @@ async def register_and_login(
         },
     )
     response = await client.post(
-        "/api/v1/auth/login",
+        "/api/auth/login",
         json={
             "email": email,
             "password": password,
@@ -40,7 +40,7 @@ async def test_create_and_list_books_for_authenticated_user(
         token = await register_and_login(client, "reader@example.com")
 
         create_response = await client.post(
-            "/api/v1/books",
+            "/api/books",
             headers={"Authorization": f"Bearer {token}"},
             json={
                 "title": "Clean Code",
@@ -54,7 +54,7 @@ async def test_create_and_list_books_for_authenticated_user(
             },
         )
         list_response = await client.get(
-            "/api/v1/books",
+            "/api/books",
             headers={"Authorization": f"Bearer {token}"},
         )
 
@@ -84,18 +84,18 @@ async def test_books_are_scoped_to_authenticated_user(test_app, override_get_db)
         second_token = await register_and_login(client, "second@example.com")
 
         create_response = await client.post(
-            "/api/v1/books",
+            "/api/books",
             headers={"Authorization": f"Bearer {first_token}"},
             json={"title": "Domain-Driven Design", "author": "Eric Evans"},
         )
         book_id = create_response.json()["id"]
 
         second_user_list = await client.get(
-            "/api/v1/books",
+            "/api/books",
             headers={"Authorization": f"Bearer {second_token}"},
         )
         forbidden_update = await client.patch(
-            f"/api/v1/books/{book_id}",
+            f"/api/books/{book_id}",
             headers={"Authorization": f"Bearer {second_token}"},
             json={"title": "Not mine"},
         )
@@ -141,7 +141,7 @@ async def test_search_book_cover_candidates(test_app, override_get_db) -> None:
     ) as client:
         token = await register_and_login(client, "covers@example.com")
         response = await client.get(
-            "/api/v1/books/covers/search",
+            "/api/books/covers/search",
             params={"title": "Clean Code", "author": "Robert C. Martin", "limit": 3},
             headers={"Authorization": f"Bearer {token}"},
         )
@@ -197,7 +197,7 @@ async def test_search_book_cover_candidates_by_isbn(test_app, override_get_db) -
     ) as client:
         token = await register_and_login(client, "isbn-covers@example.com")
         response = await client.get(
-            "/api/v1/books/covers/search",
+            "/api/books/covers/search",
             params={"isbn": "9780140449136"},
             headers={"Authorization": f"Bearer {token}"},
         )
@@ -212,9 +212,9 @@ async def test_books_require_authentication(test_app, override_get_db) -> None:
         transport=ASGITransport(app=test_app),
         base_url="http://test",
     ) as client:
-        response = await client.get("/api/v1/books")
+        response = await client.get("/api/books")
         cover_search_response = await client.get(
-            "/api/v1/books/covers/search",
+            "/api/books/covers/search",
             params={"title": "Clean Code"},
         )
 

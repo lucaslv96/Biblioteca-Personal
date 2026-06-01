@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1.router import api_router
+from app.api.router import api_router
 from app.core.config import get_settings
 from app.db.init_db import init_db
 
@@ -33,7 +33,7 @@ def create_app(init_database: bool = True) -> FastAPI:
         allow_headers=["*"],
     )
 
-    application.include_router(api_router, prefix=settings.api_v1_prefix)
+    application.include_router(api_router, prefix=settings.api_prefix)
     return application
 
 

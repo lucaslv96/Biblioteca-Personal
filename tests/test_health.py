@@ -8,7 +8,7 @@ async def test_health_check_returns_api_status(test_app) -> None:
         transport=ASGITransport(app=test_app),
         base_url="http://test",
     ) as client:
-        response = await client.get("/api/v1/health")
+        response = await client.get("/api/health")
 
     assert response.status_code == 200
     assert response.json() == {

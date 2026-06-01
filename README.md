@@ -62,7 +62,7 @@ No deben contener logica de negocio ni queries SQL.
 Ejemplo:
 
 ```text
-app/api/v1/endpoints/users.py
+app/api/endpoints/users.py
 ```
 
 ### Schema / DTO
@@ -172,7 +172,7 @@ app/core/
 Cuando se llama a:
 
 ```http
-POST /api/v1/users
+POST /api/users
 ```
 
 El flujo es:
@@ -191,7 +191,7 @@ El flujo es:
 Representacion corta:
 
 ```text
-app/api/v1/endpoints/users.py
+app/api/endpoints/users.py
   -> app/schemas/user.py
   -> app/services/user_service.py
   -> app/repositories/user_repository.py
@@ -205,13 +205,12 @@ app/api/v1/endpoints/users.py
 app/
   api/
     deps.py
-    v1/
-      endpoints/
-        auth.py
-        books.py
-        health.py
-        users.py
-      router.py
+    endpoints/
+      auth.py
+      books.py
+      health.py
+      users.py
+    router.py
   core/
     config.py
     security.py
@@ -270,11 +269,11 @@ frontend/
 | --- | --- |
 | `app/main.py` | Crea la instancia FastAPI, registra routers y ejecuta la inicializacion de la base de datos al arrancar. |
 | `app/api/deps.py` | Dependencias compartidas de FastAPI, incluyendo usuario autenticado desde JWT. |
-| `app/api/v1/router.py` | Router principal de la version 1 de la API. Agrupa los routers de endpoints. |
-| `app/api/v1/endpoints/auth.py` | Endpoint de login. Valida credenciales y devuelve JWT. |
-| `app/api/v1/endpoints/books.py` | Endpoints CRUD de libros y busqueda de portadas, protegidos por autenticacion. |
-| `app/api/v1/endpoints/health.py` | Endpoint de health check para comprobar que la API responde. |
-| `app/api/v1/endpoints/users.py` | Endpoint de registro de usuarios. Actua como controller. |
+| `app/api/router.py` | Router principal de la API. Agrupa los routers de endpoints. |
+| `app/api/endpoints/auth.py` | Endpoint de login. Valida credenciales y devuelve JWT. |
+| `app/api/endpoints/books.py` | Endpoints CRUD de libros y busqueda de portadas, protegidos por autenticacion. |
+| `app/api/endpoints/health.py` | Endpoint de health check para comprobar que la API responde. |
+| `app/api/endpoints/users.py` | Endpoint de registro de usuarios. Actua como controller. |
 | `app/core/config.py` | Configuracion central de la app usando `pydantic-settings`. |
 | `app/core/security.py` | Funciones de seguridad: hashear/verificar passwords y crear tokens JWT. |
 | `app/db/base.py` | Define `Base`, la clase base de SQLAlchemy para los modelos. |
@@ -302,7 +301,7 @@ frontend/
 | `tests/conftest.py` | Fixtures compartidas: app de test, SQLite temporal y override de `get_db`. |
 | `tests/test_auth.py` | Tests del login correcto y rechazo de credenciales invalidas. |
 | `tests/test_books.py` | Tests del CRUD de libros, portadas, autenticacion y aislamiento por usuario. |
-| `tests/test_health.py` | Test del endpoint `GET /api/v1/health`. |
+| `tests/test_health.py` | Test del endpoint `GET /api/health`. |
 | `tests/test_users.py` | Tests del registro de usuario y rechazo de emails duplicados. |
 
 ### Frontend
@@ -407,7 +406,7 @@ Campos actuales:
 ### Health check
 
 ```http
-GET /api/v1/health
+GET /api/health
 ```
 
 Respuesta:
@@ -423,7 +422,7 @@ Respuesta:
 ### Registro de usuario
 
 ```http
-POST /api/v1/users
+POST /api/users
 ```
 
 Body:
@@ -465,7 +464,7 @@ Status code:
 ### Login
 
 ```http
-POST /api/v1/auth/login
+POST /api/auth/login
 ```
 
 Body:
@@ -510,7 +509,7 @@ Status code:
 ### Listar libros
 
 ```http
-GET /api/v1/books
+GET /api/books
 Authorization: Bearer <access_token>
 ```
 
@@ -539,7 +538,7 @@ Respuesta:
 ### Crear libro
 
 ```http
-POST /api/v1/books
+POST /api/books
 Authorization: Bearer <access_token>
 ```
 
@@ -562,14 +561,14 @@ Body:
 ### Buscar portadas
 
 ```http
-GET /api/v1/books/covers/search?title=Clean%20Code&author=Robert%20C.%20Martin&limit=8
+GET /api/books/covers/search?title=Clean%20Code&author=Robert%20C.%20Martin&limit=8
 Authorization: Bearer <access_token>
 ```
 
 Tambien puede buscar por ISBN:
 
 ```http
-GET /api/v1/books/covers/search?isbn=9780132350884&limit=8
+GET /api/books/covers/search?isbn=9780132350884&limit=8
 Authorization: Bearer <access_token>
 ```
 
@@ -595,7 +594,7 @@ Este endpoint no guarda nada por si solo. Devuelve candidatos para que el usuari
 ### Editar libro
 
 ```http
-PATCH /api/v1/books/{book_id}
+PATCH /api/books/{book_id}
 Authorization: Bearer <access_token>
 ```
 
@@ -610,7 +609,7 @@ Body:
 ### Eliminar libro
 
 ```http
-DELETE /api/v1/books/{book_id}
+DELETE /api/books/{book_id}
 Authorization: Bearer <access_token>
 ```
 
@@ -632,9 +631,9 @@ Esta pensado como una interfaz sencilla de producto para probar el flujo de acce
 
 Permite:
 
-- Iniciar sesion con `POST /api/v1/auth/login`.
+- Iniciar sesion con `POST /api/auth/login`.
 - Entrar en una pantalla principal cuando las credenciales son correctas.
-- Registrar usuarios con `POST /api/v1/users`.
+- Registrar usuarios con `POST /api/users`.
 - Crear, listar, editar, marcar como leidos y borrar libros.
 - Guardar ISBN de cada libro.
 - Pegar una URL manual de portada.

@@ -9,7 +9,7 @@ async def test_create_user_returns_public_user_data(test_app, override_get_db) -
         base_url="http://test",
     ) as client:
         response = await client.post(
-            "/api/v1/users",
+            "/api/users",
             json={
                 "email": "Lucas@example.com",
                 "password": "supersecret",
@@ -39,8 +39,8 @@ async def test_create_user_rejects_duplicated_email(test_app, override_get_db) -
             "full_name": "Lucas",
         }
 
-        first_response = await client.post("/api/v1/users", json=payload)
-        second_response = await client.post("/api/v1/users", json=payload)
+        first_response = await client.post("/api/users", json=payload)
+        second_response = await client.post("/api/users", json=payload)
 
     assert first_response.status_code == 201
     assert second_response.status_code == 409

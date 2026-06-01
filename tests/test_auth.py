@@ -12,7 +12,7 @@ async def test_login_returns_access_token_for_valid_credentials(
         base_url="http://test",
     ) as client:
         await client.post(
-            "/api/v1/users",
+            "/api/users",
             json={
                 "email": "lucas@example.com",
                 "password": "supersecret",
@@ -21,7 +21,7 @@ async def test_login_returns_access_token_for_valid_credentials(
         )
 
         response = await client.post(
-            "/api/v1/auth/login",
+            "/api/auth/login",
             json={
                 "email": "lucas@example.com",
                 "password": "supersecret",
@@ -43,7 +43,7 @@ async def test_login_rejects_invalid_credentials(test_app, override_get_db) -> N
         base_url="http://test",
     ) as client:
         await client.post(
-            "/api/v1/users",
+            "/api/users",
             json={
                 "email": "lucas@example.com",
                 "password": "supersecret",
@@ -52,7 +52,7 @@ async def test_login_rejects_invalid_credentials(test_app, override_get_db) -> N
         )
 
         response = await client.post(
-            "/api/v1/auth/login",
+            "/api/auth/login",
             json={
                 "email": "lucas@example.com",
                 "password": "wrongsecret",
